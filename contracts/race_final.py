@@ -351,10 +351,14 @@ class RaceFinal(gl.Contract):
                 if field not in data or not isinstance(data[field], bool):
                     raise gl.vm.UserError(f"{ERR_LLM}MISSING_OR_INVALID_FIELD_{field}")
             for field in _RANK_FIELDS:
-                if field not in data or not isinstance(data[field], int) or isinstance(data[field], bool):
+                # Strict: must be a real int, never bool (bool is an int subclass in
+                # Python), never float/str/None, and strictly positive. A rank of 0
+                # or below is never a valid final placement.
+                value = data.get(field, None)
+                if not isinstance(value, int) or isinstance(value, bool):
                     raise gl.vm.UserError(f"{ERR_LLM}MISSING_OR_INVALID_FIELD_{field}")
-                if data[field] < 0:
-                    raise gl.vm.UserError(f"{ERR_LLM}NEGATIVE_RANK_{field}")
+                if value <= 0:
+                    raise gl.vm.UserError(f"{ERR_LLM}INVALID_RANK_{field}")
             return {field: data[field] for field in _REQUIRED_RESULT_FIELDS}
 
         def validator_fn(leader_result) -> bool:
