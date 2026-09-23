@@ -1,5 +1,24 @@
 # Manual Deployment — RACE//FINAL (Studio UI)
 
+## STATUS: DEPLOYED
+
+| | |
+|---|---|
+| Network | StudioNet, chain ID 61999 |
+| Contract address | `0x89457832760701BD1941873f2d44E06955e4Ef46` |
+| Deployment tx | `0x19c3afbdf9edb8f529f5489df2cec31f494ae8d88976765159186f844963c7e6` |
+| Deployer | `0xaffE15eEc45b68835cc9E5B4Ab85dD5deaE8e70b` |
+| GenVM execution result | `SUCCESS` |
+| Consensus result | `Accepted` |
+| Source verification | Byte-identical to `contracts/race_final.py` — confirmed via `genlayer code <address>`, SHA-256 `72199d1f2fccf48c3e98ecacb3de44daaaf0829b0f4fcc5a48925816e197b994` (LF-normalized) matches on both sides |
+| Schema verification | `genlayer schema <address>` returns all 10 methods with correct signatures, `ctor: { params: [] }` |
+
+Full machine-readable record: [`../deployments/studionet.json`](../deployments/studionet.json).
+
+The steps below are preserved as the reusable procedure for any future
+redeployment (a new contract version requires a new deployment — the
+address above is frozen to the source that was actually verified).
+
 ## Why manual, and why via the Studio web UI
 
 Per this project's own rules, the final wallet-controlled deployment is

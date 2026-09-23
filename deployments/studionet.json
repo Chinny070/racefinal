@@ -1,0 +1,18 @@
+{
+  "network": "studionet",
+  "chain_id": 61999,
+  "rpc_url": "https://studio.genlayer.com/api",
+  "contract": "0x89457832760701BD1941873f2d44E06955e4Ef46",
+  "contract_name": "RaceFinal",
+  "deployment_tx": "0x19c3afbdf9edb8f529f5489df2cec31f494ae8d88976765159186f844963c7e6",
+  "deployer": "0xaffE15eEc45b68835cc9E5B4Ab85dD5deaE8e70b",
+  "deployment_method": "Studio UI (studio.genlayer.com), manual wallet-controlled deployment",
+  "deployed_at": "2026-09-23T13:24:09Z",
+  "source_file": "contracts/race_final.py",
+  "source_sha256": "72199d1f2fccf48c3e98ecacb3de44daaaf0829b0f4fcc5a48925816e197b994",
+  "source_sha256_note": "computed over LF-normalized bytes; verified byte-identical to on-chain code fetched via `genlayer code <address>` on 2026-09-23",
+  "depends_runner": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6",
+  "genvm_execution_result": "SUCCESS",
+  "consensus_result": "Accepted",
+  "status": "DEPLOYED"
+}
