@@ -3,6 +3,9 @@
 A two-party public competition result settlement protocol built on
 [GenLayer](https://genlayer.com) Intelligent Contracts.
 
+**Live app**: https://frontend-pi-brown-73.vercel.app
+**Repository**: https://github.com/Chinny070/racefinal
+
 ## What it does
 
 Two participants (A = contest creator, B = whoever joins) lock equal GEN
