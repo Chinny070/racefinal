@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import type { GenLayerClient } from "genlayer-js/types";
 import { createWalletClient, type Eip1193Provider, type studionet } from "../lib/genlayerClient";
 import { CHAIN_ID } from "../lib/constants";
@@ -25,12 +25,34 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [client, setClient] = useState<GenLayerClient<typeof studionet> | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const hasInjectedWallet = useMemo(() => getProvider() !== null, []);
+  // Many wallets inject window.ethereum asynchronously, slightly after our
+  // first render, and some browsers/extensions delay it further (e.g. after
+  // a "click extension icon to unlock" step). A one-time useMemo at mount
+  // would permanently miss that and lock the button in a disabled
+  // "No wallet found" state even once the wallet is actually present, which
+  // is exactly what made Connect appear to do nothing. Poll briefly instead
+  // and also listen for the standard EIP-6963/legacy injection event.
+  const [hasInjectedWallet, setHasInjectedWallet] = useState(() => getProvider() !== null);
+
+  useEffect(() => {
+    if (hasInjectedWallet) return;
+    const check = () => setHasInjectedWallet(getProvider() !== null);
+    window.addEventListener("ethereum#initialized", check);
+    const interval = window.setInterval(check, 500);
+    const timeout = window.setTimeout(() => window.clearInterval(interval), 5000);
+    return () => {
+      window.removeEventListener("ethereum#initialized", check);
+      window.clearInterval(interval);
+      window.clearTimeout(timeout);
+    };
+  }, [hasInjectedWallet]);
 
   const connect = useCallback(async () => {
     const provider = getProvider();
     if (!provider) {
-      setError("No injected wallet found. Install MetaMask or a compatible wallet.");
+      setError(
+        "No injected wallet found in this browser. Install MetaMask (or another EIP-1193 wallet extension), then reload this page."
+      );
       return;
     }
     setConnecting(true);

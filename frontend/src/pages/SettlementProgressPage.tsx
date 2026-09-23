@@ -17,7 +17,7 @@ export function SettlementProgressPage() {
   const { id } = useParams();
   const contestId = id ? Number(id) : null;
   const { contest, loading, refresh } = useContest(contestId);
-  const { client, address, connect, hasInjectedWallet } = useWallet();
+  const { client, address, connect, error: walletError } = useWallet();
   const { phase, error, run, reset } = useTxState();
   const navigate = useNavigate();
 
@@ -95,12 +95,11 @@ export function SettlementProgressPage() {
               </p>
             </div>
           )}
+          {walletError && !address && <p className="text-[13px] text-ember mb-6">{walletError}</p>}
 
           <div className="flex items-center gap-4">
             {!address ? (
-              <Button onClick={connect} disabled={!hasInjectedWallet}>
-                Connect wallet
-              </Button>
+              <Button onClick={connect}>Connect wallet</Button>
             ) : contest.resolved ? (
               <Link to={`/contests/${contest.contest_id}/result`}>
                 <Button variant="neutral">View result</Button>

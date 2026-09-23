@@ -24,7 +24,7 @@ function fromDatetimeLocal(value: string): number {
 }
 
 export function ContestCreatePage() {
-  const { address, client, connect, hasInjectedWallet } = useWallet();
+  const { address, client, connect, error: walletError } = useWallet();
   const navigate = useNavigate();
   const { phase, txHash, error: txError, run } = useTxState();
 
@@ -232,10 +232,11 @@ export function ContestCreatePage() {
 
             {formError && <p className="text-[13px] text-ember">{formError}</p>}
             {txError && <p className="text-[13px] text-ember">{txError}</p>}
+            {walletError && !address && <p className="text-[13px] text-ember">{walletError}</p>}
 
             <div className="flex items-center gap-4 pt-2">
               {!address ? (
-                <Button type="button" onClick={connect} disabled={!hasInjectedWallet}>
+                <Button type="button" onClick={connect}>
                   Connect wallet to continue
                 </Button>
               ) : (

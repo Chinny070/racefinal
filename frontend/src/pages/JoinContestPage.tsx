@@ -15,7 +15,7 @@ export function JoinContestPage() {
   const { id } = useParams();
   const contestId = id ? Number(id) : null;
   const { contest, loading, refresh } = useContest(contestId);
-  const { address, client, connect, hasInjectedWallet } = useWallet();
+  const { address, client, connect, error: walletError } = useWallet();
   const { phase, error, run } = useTxState();
 
   if (loading) {
@@ -93,12 +93,11 @@ export function JoinContestPage() {
           </div>
 
           {error && <p className="text-[13px] text-ember">{error}</p>}
+          {walletError && !address && <p className="text-[13px] text-ember">{walletError}</p>}
 
           <div className="flex items-center gap-4">
             {!address ? (
-              <Button onClick={connect} disabled={!hasInjectedWallet}>
-                Connect wallet to join
-              </Button>
+              <Button onClick={connect}>Connect wallet to join</Button>
             ) : (
               <Button onClick={handleJoin} disabled={busy}>
                 {busy ? "Submitting…" : `Lock ${weiToGen(contest.stake_wei)} GEN and join`}

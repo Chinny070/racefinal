@@ -10,7 +10,7 @@ import { readWithdrawable, withdraw as withdrawCall } from "../lib/contract";
 import { weiToGen } from "../lib/format";
 
 export function WithdrawalPage() {
-  const { address, client, connect, hasInjectedWallet } = useWallet();
+  const { address, client, connect, error: walletError } = useWallet();
   const { phase, error, run, reset } = useTxState();
   const [amount, setAmount] = useState<bigint | null>(null);
   const [checking, setChecking] = useState(false);
@@ -57,9 +57,8 @@ export function WithdrawalPage() {
           {!address ? (
             <div className="text-center py-6">
               <p className="text-[14px] text-fog mb-4">Connect a wallet to check your balance.</p>
-              <Button onClick={connect} disabled={!hasInjectedWallet}>
-                Connect wallet
-              </Button>
+              <Button onClick={connect}>Connect wallet</Button>
+              {walletError && <p className="text-[13px] text-ember mt-4">{walletError}</p>}
             </div>
           ) : (
             <>
