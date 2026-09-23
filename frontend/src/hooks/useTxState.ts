@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import type { GenLayerClient } from "genlayer-js/types";
+import { transactionsStatusNumberToName } from "genlayer-js/types";
 import type { studionet } from "../lib/genlayerClient";
 import type { TxPhase } from "../types/contract";
 
@@ -57,7 +58,15 @@ export function useTxState(): TxStateResult {
       while (!cancelledRef.current && attempts < 120) {
         attempts += 1;
         const tx = await client.getTransaction({ hash: hash as unknown as Parameters<Client["getTransaction"]>[0]["hash"] });
-        const statusName = String((tx as { status?: unknown })?.status ?? "");
+        const rawStatus = (tx as { status?: unknown })?.status;
+        // The RPC returns status as a numeric code; the SDK's enum values
+        // are the string names. Normalize numeric codes via the SDK's own
+        // lookup table so "1" (PENDING) isn't mistaken for an unknown
+        // terminal status and marked failed while still genuinely pending.
+        const statusName =
+          typeof rawStatus === "number" || (typeof rawStatus === "string" && /^\d+$/.test(rawStatus))
+            ? String(transactionsStatusNumberToName[String(rawStatus) as keyof typeof transactionsStatusNumberToName] ?? rawStatus)
+            : String(rawStatus ?? "");
         if (statusName === "FINALIZED") {
           const leaderReceipt = (tx as { consensus_data?: { leader_receipt?: Array<{ execution_result?: string; result?: { payload?: unknown } }> } })
             ?.consensus_data?.leader_receipt;
