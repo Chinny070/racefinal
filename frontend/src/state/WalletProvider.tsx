@@ -15,6 +15,22 @@ interface WalletState {
 
 const WalletContext = createContext<WalletState | null>(null);
 
+function describeError(e: unknown): string {
+  if (e instanceof Error) return e.message || e.name || "Failed to connect wallet.";
+  if (typeof e === "string") return e;
+  if (e && typeof e === "object") {
+    const withMsg = e as { message?: unknown; error?: { message?: unknown } };
+    if (typeof withMsg.message === "string" && withMsg.message) return withMsg.message;
+    if (typeof withMsg.error?.message === "string" && withMsg.error.message) return withMsg.error.message;
+    try {
+      return JSON.stringify(e);
+    } catch {
+      // fall through
+    }
+  }
+  return "Failed to connect wallet.";
+}
+
 function getProvider(): Eip1193Provider | null {
   const eth = (window as unknown as { ethereum?: Eip1193Provider }).ethereum;
   return eth ?? null;
@@ -58,7 +74,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       setAddress(account);
       setClient(walletClient);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to connect wallet.");
+      console.error("Wallet connect failed", e);
+      setError(describeError(e));
     } finally {
       setConnecting(false);
     }
@@ -78,7 +95,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       if (!account) throw new Error("No account returned by wallet.");
       await connectAccount(account, provider);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to connect wallet.");
+      console.error("Wallet connect failed", e);
+      setError(describeError(e));
     }
   }, [connectAccount]);
 
