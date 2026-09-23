@@ -47,21 +47,14 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     };
   }, [hasInjectedWallet]);
 
-  const connect = useCallback(async () => {
-    const provider = getProvider();
-    if (!provider) {
-      setError(
-        "No injected wallet found in this browser. Install MetaMask (or another EIP-1193 wallet extension), then reload this page."
-      );
-      return;
-    }
+  const connectAccount = useCallback(async (account: `0x${string}`, provider: Eip1193Provider) => {
     setConnecting(true);
     setError(null);
     try {
-      const accounts = (await provider.request({ method: "eth_requestAccounts" })) as string[];
-      const account = accounts[0] as `0x${string}` | undefined;
-      if (!account) throw new Error("No account returned by wallet.");
       const walletClient = await createWalletClient(account, provider);
+      // Set together so the address shown in the UI is never ahead of a
+      // usable client — otherwise a page could see a truthy address while
+      // client is still null and fail with a confusing "connect wallet" error.
       setAddress(account);
       setClient(walletClient);
     } catch (e) {
@@ -70,6 +63,24 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       setConnecting(false);
     }
   }, []);
+
+  const connect = useCallback(async () => {
+    const provider = getProvider();
+    if (!provider) {
+      setError(
+        "No injected wallet found in this browser. Install MetaMask (or another EIP-1193 wallet extension), then reload this page."
+      );
+      return;
+    }
+    try {
+      const accounts = (await provider.request({ method: "eth_requestAccounts" })) as string[];
+      const account = accounts[0] as `0x${string}` | undefined;
+      if (!account) throw new Error("No account returned by wallet.");
+      await connectAccount(account, provider);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to connect wallet.");
+    }
+  }, [connectAccount]);
 
   const disconnect = useCallback(() => {
     setAddress(null);
@@ -84,8 +95,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       if (!accounts || accounts.length === 0) {
         disconnect();
       } else {
-        setAddress(accounts[0] as `0x${string}`);
-        void connect();
+        void connectAccount(accounts[0] as `0x${string}`, provider);
       }
     };
     provider.on("accountsChanged", handleAccountsChanged);
