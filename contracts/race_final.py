@@ -90,7 +90,7 @@ class Contest:
     stake_wei: u256
     match_close_time: u256              # unix seconds; JOIN must happen before this
     settle_after: u256                  # unix seconds; settlement attempts before this are rejected
-    resolution_deadline: u256           # unix seconds; after this, permissionless refund is allowed
+    resolution_deadline: u256           # unix seconds; at/after this, refund is the only valid transition
     status: u8
     created_at: u256
     matched_at: u256
@@ -292,6 +292,8 @@ class RaceFinal(gl.Contract):
         now = _now()
         if now < contest.settle_after:
             raise gl.vm.UserError(f"{ERR_EXPECTED}SETTLEMENT_TOO_EARLY")
+        if now >= contest.resolution_deadline:
+            raise gl.vm.UserError(f"{ERR_EXPECTED}SETTLEMENT_DEADLINE_REACHED")
 
         url = contest.canonical_source_url
         method = contest.retrieval_method

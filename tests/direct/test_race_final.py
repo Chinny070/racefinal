@@ -355,6 +355,87 @@ def test_settle_before_settle_after_rejected(direct_vm, direct_deploy, direct_al
         contract.settle(contest_id)
 
 
+def test_settlement_immediately_before_resolution_deadline_is_allowed(
+    direct_vm, direct_deploy, direct_alice, direct_bob
+):
+    contract = direct_deploy("contracts/race_final.py")
+    match_close, settle_after, deadline = _times(
+        direct_vm, offset_match=1, offset_settle=2, offset_deadline=10
+    )
+    direct_vm.sender = direct_alice
+    direct_vm.value = 10**18
+    contest_id = contract.create_contest(*_create_args(match_close, settle_after, deadline))
+    direct_vm.value = 0
+    direct_vm.sender = direct_bob
+    direct_vm.value = 10**18
+    contract.join_contest(contest_id)
+    direct_vm.value = 0
+
+    _warp_to(direct_vm, deadline - 1)
+    _mock_result(direct_vm, a_rank=1, b_rank=3)
+    contract.settle(contest_id)
+
+    data = json.loads(contract.get_contest(contest_id))
+    assert data["status"] == 2  # CONTEST_SETTLED_A
+    assert data["resolved"] is True
+
+
+def test_settlement_at_resolution_deadline_is_rejected_and_refund_is_valid(
+    direct_vm, direct_deploy, direct_alice, direct_bob, direct_charlie
+):
+    contract = direct_deploy("contracts/race_final.py")
+    match_close, settle_after, deadline = _times(
+        direct_vm, offset_match=1, offset_settle=2, offset_deadline=10
+    )
+    direct_vm.sender = direct_alice
+    direct_vm.value = 10**18
+    contest_id = contract.create_contest(*_create_args(match_close, settle_after, deadline))
+    direct_vm.value = 0
+    direct_vm.sender = direct_bob
+    direct_vm.value = 10**18
+    contract.join_contest(contest_id)
+    direct_vm.value = 0
+
+    _warp_to(direct_vm, deadline)
+    _mock_result(direct_vm, a_rank=1, b_rank=3)
+    with direct_vm.expect_revert("SETTLEMENT_DEADLINE_REACHED"):
+        contract.settle(contest_id)
+
+    direct_vm.sender = direct_charlie
+    contract.refund_after_deadline(contest_id)
+    data = json.loads(contract.get_contest(contest_id))
+    assert data["status"] == 5  # CONTEST_REFUNDED
+    assert data["resolved"] is True
+
+
+def test_settlement_after_resolution_deadline_is_rejected_and_refund_is_only_transition(
+    direct_vm, direct_deploy, direct_alice, direct_bob, direct_charlie
+):
+    contract = direct_deploy("contracts/race_final.py")
+    match_close, settle_after, deadline = _times(
+        direct_vm, offset_match=1, offset_settle=2, offset_deadline=10
+    )
+    direct_vm.sender = direct_alice
+    direct_vm.value = 10**18
+    contest_id = contract.create_contest(*_create_args(match_close, settle_after, deadline))
+    direct_vm.value = 0
+    direct_vm.sender = direct_bob
+    direct_vm.value = 10**18
+    contract.join_contest(contest_id)
+    direct_vm.value = 0
+
+    _warp_to(direct_vm, deadline + 1)
+    _mock_result(direct_vm, a_rank=1, b_rank=3)
+    with direct_vm.expect_revert("SETTLEMENT_DEADLINE_REACHED"):
+        contract.settle(contest_id)
+
+    direct_vm.sender = direct_charlie
+    contract.refund_after_deadline(contest_id)
+    data = json.loads(contract.get_contest(contest_id))
+    assert data["status"] == 5  # CONTEST_REFUNDED
+    assert data["resolved"] is True
+
+
 def test_validator_rejects_forged_leader_result(direct_vm, direct_deploy, direct_alice, direct_bob):
     contract = direct_deploy("contracts/race_final.py")
     contest_id = _create_and_match(contract, direct_vm, direct_alice, direct_bob)
