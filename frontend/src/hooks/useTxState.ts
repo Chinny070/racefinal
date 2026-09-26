@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import type { GenLayerClient } from "genlayer-js/types";
 import { transactionsStatusNumberToName } from "genlayer-js/types";
 import type { studionet } from "../lib/genlayerClient";
+import { getReadClient } from "../lib/genlayerClient";
 import type { TxPhase } from "../types/contract";
 
 type Client = GenLayerClient<typeof studionet>;
@@ -54,10 +55,25 @@ export function useTxState(): TxStateResult {
 
     setPhase("pending");
     try {
+      // A write is wallet-backed, but receipt polling must use the public
+      // StudioNet RPC. Some injected wallets accept the write then reject or
+      // intermittently fail GenLayer's custom transaction-read RPC methods.
+      const readClient = getReadClient();
       let attempts = 0;
       while (!cancelledRef.current && attempts < 120) {
         attempts += 1;
-        const tx = await client.getTransaction({ hash: hash as unknown as Parameters<Client["getTransaction"]>[0]["hash"] });
+        let tx: Awaited<ReturnType<Client["getTransaction"]>>;
+        try {
+          tx = await readClient.getTransaction({
+            hash: hash as unknown as Parameters<Client["getTransaction"]>[0]["hash"],
+          });
+        } catch {
+          // Submission already returned a tx hash. A temporary RPC/network
+          // failure is not evidence the on-chain transaction failed; keep
+          // the UI pending and retry the same immutable hash.
+          await new Promise((resolve) => setTimeout(resolve, 3000));
+          continue;
+        }
         const rawStatus = (tx as { status?: unknown })?.status;
         // The RPC returns status as a numeric code; the SDK's enum values
         // are the string names. Normalize numeric codes via the SDK's own
